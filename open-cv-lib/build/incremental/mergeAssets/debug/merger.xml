@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merger>
+
+    <dataSet config="main" >
+        <source path="/Users/Alex/svn/mygithub/image-matcher/open-cv-lib/src/main/assets" />
+    </dataSet>
+    <dataSet config="debug" >
+        <source path="/Users/Alex/svn/mygithub/image-matcher/open-cv-lib/src/debug/assets" />
+    </dataSet>
+
+</merger>

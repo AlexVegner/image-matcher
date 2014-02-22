@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merger>
+
+    <dataSet config="main" >
+        <source path="/Users/Alex/svn/mygithub/image-matcher/open-cv-lib/src/main/res" >
+            <file
+                name="ic_launcher"
+                path="/Users/Alex/svn/mygithub/image-matcher/open-cv-lib/src/main/res/drawable-hdpi/ic_launcher.png"
+                qualifiers="hdpi"
+                type="drawable" />
+            <file
+                name="ic_launcher"
+                path="/Users/Alex/svn/mygithub/image-matcher/open-cv-lib/src/main/res/drawable-mdpi/ic_launcher.png"
+                qualifiers="mdpi"
+                type="drawable" />
+            <file
+                name="ic_launcher"
+                path="/Users/Alex/svn/mygithub/image-matcher/open-cv-lib/src/main/res/drawable-xhdpi/ic_launcher.png"
+                qualifiers="xhdpi"
+                type="drawable" />
+            <file
+                name="ic_launcher"
+                path="/Users/Alex/svn/mygithub/image-matcher/open-cv-lib/src/main/res/drawable-xxhdpi/ic_launcher.png"
+                qualifiers="xxhdpi"
+                type="drawable" />
+            <file
+                path="/Users/Alex/svn/mygithub/image-matcher/open-cv-lib/src/main/res/values/attrs.xml"
+                qualifiers="" >
+                <declare-styleable name="CameraBridgeViewBase" >
+                    <attr
+                        name="show_fps"
+                        format="boolean" />
+                    <attr
+                        name="camera_id"
+                        format="integer" >
+                        <enum
+                            name="any"
+                            value="-1" />
+                        <enum
+                            name="back"
+                            value="99" />
+                        <enum
+                            name="front"
+                            value="98" />
+                    </attr>
+                </declare-styleable>
+            </file>
+        </source>
+        <source path="/Users/Alex/svn/mygithub/image-matcher/open-cv-lib/build/res/rs/release" />
+        <source path="/Users/Alex/svn/mygithub/image-matcher/open-cv-lib/build/res/generated/release" />
+    </dataSet>
+    <dataSet config="release" >
+        <source path="/Users/Alex/svn/mygithub/image-matcher/open-cv-lib/src/release/res" />
+    </dataSet>
+
+</merger>
