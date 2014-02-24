@@ -2,20 +2,41 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.mytest.imagematcher" >
 
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-sdk android:minSdkVersion="11" />
+
+
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.front" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.front.autofocus" android:required="false"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
         <activity
-            android:name="com.mytest.imagematcher.MainActivity"
-            android:label="@string/app_name" >
+            android:name="com.mytest.imagematcher.ui.CameraActivity"
+            android:label="@string/app_name"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboardHidden|orientation">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name="com.mytest.imagematcher.comparator.Settings"
+            android:alwaysRetainTaskState="true"
+            android:label="@string/title_activity_settings"
+            android:launchMode="singleTop"
+            android:screenOrientation="landscape" >
+        </activity>
+
     </application>
 
 </manifest>

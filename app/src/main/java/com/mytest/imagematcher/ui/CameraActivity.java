@@ -23,22 +23,41 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.core.CvException;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfDMatch;
+import org.opencv.core.MatOfKeyPoint;
+import org.opencv.features2d.DescriptorExtractor;
+import org.opencv.features2d.DescriptorMatcher;
+import org.opencv.features2d.FeatureDetector;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.concurrent.TimeUnit;
 
 public class CameraActivity extends Activity implements CvCameraViewListener2, OnTouchListener {
     private static final String TAG = "OCVSample::Activity";
 
-    private Tutorial3View mOpenCvCameraView;
+    private CameraView mOpenCvCameraView;
     private List<Size> mResolutionList;
     private MenuItem[] mEffectMenuItems;
     private SubMenu mColorEffectsMenu;
     private MenuItem[] mResolutionMenuItems;
     private SubMenu mResolutionMenu;
+    private MenuItem mPlayMenu;
+    private MenuItem mStopMenu;
+
+    private SubMenu mCheckIntervalMenu;
+    private MenuItem[] mCheckIntervalMenuItems;
+
+
+    private boolean isActive;
+    private long lastCheck;
+    private int checkInterval = 5;
+    private Mat lastMat = null;
+    private int COUNT_OF_MACHES = 50;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -58,6 +77,7 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
         }
     };
 
+
     public CameraActivity() {
        // Log.i(TAG, "Instantiated new " + Tutorial3Activity.getClass().getName());
     }
@@ -71,7 +91,7 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
 
         setContentView(R.layout.tutorial3_surface_view);
 
-        mOpenCvCameraView = (Tutorial3View) findViewById(R.id.tutorial3_activity_java_surface_view);
+        mOpenCvCameraView = (CameraView) findViewById(R.id.tutorial3_activity_java_surface_view);
 
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
 
@@ -84,6 +104,7 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
         super.onPause();
         if (mOpenCvCameraView != null)
             mOpenCvCameraView.disableView();
+        stopRecord();
     }
 
     @Override
@@ -106,7 +127,114 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
     }
 
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
+        if (isActive && lastCheck + TimeUnit.SECONDS.toMillis(checkInterval) <= System.currentTimeMillis() ){
+            lastCheck = System.currentTimeMillis();
+            if (lastMat == null){
+                lastMat = inputFrame.rgba();
+                takeAPictureOnUiThread();
+            } else {
+                Mat currentMat = inputFrame.rgba();
+                Mat img1 = lastMat.clone();
+                Mat img2 = currentMat.clone();
+                try {
+                    if (isADuplicate(img1, img2)){
+                        //showToastnUiThread("Images are exact duplicates");
+                    } else {
+                        //showToastnUiThread("Images are not duplicates");
+                        lastMat = currentMat;
+                        takeAPictureOnUiThread();
+                    }
+                } catch (CvException e){
+
+                }
+
+
+                /*
+                img1.convertTo(img1, CvType.CV_32F);
+                img2.convertTo(img2, CvType.CV_32F);
+                Mat hist1 = new Mat();
+                Mat hist2 = new Mat();
+                MatOfInt histSize = new MatOfInt(180);
+                MatOfInt channels = new MatOfInt(0);
+                ArrayList<Mat> bgr_planes1= new ArrayList<Mat>();
+                ArrayList<Mat> bgr_planes2= new ArrayList<Mat>();
+                Core.split(img1, bgr_planes1);
+                Core.split(img2, bgr_planes2);
+                MatOfFloat histRanges = new MatOfFloat (0f, 180f);
+                boolean accumulate = false;
+                Imgproc.calcHist(bgr_planes1, channels, new Mat(), hist1, histSize, histRanges, accumulate);
+                Core.normalize(hist1, hist1, 0, hist1.rows(), Core.NORM_MINMAX, -1, new Mat());
+                Imgproc.calcHist(bgr_planes2, channels, new Mat(), hist2, histSize, histRanges, accumulate);
+                Core.normalize(hist2, hist2, 0, hist2.rows(), Core.NORM_MINMAX, -1, new Mat());
+                img1.convertTo(img1, CvType.CV_32F);
+                img2.convertTo(img2, CvType.CV_32F);
+                hist1.convertTo(hist1, CvType.CV_32F);
+                hist2.convertTo(hist2, CvType.CV_32F);
+
+                double compare = Imgproc.compareHist(hist1, hist2, Imgproc.CV_COMP_CHISQR);
+                Log.d("ImageComparator", "compare: "+compare);
+                if(compare>0 && compare<1500) {
+                    showToastnUiThread("Images may be possible duplicates, verifying");
+                    //new asyncTask(CameraActivity.this).execute();
+                }
+                else if(compare==0)
+                    showToastnUiThread("Images are exact duplicates");
+                else {
+                    showToastnUiThread("Images are not duplicates");
+                    lastMat = currentMat;
+                    lastCheck = System.currentTimeMillis();
+                    takeAPictureOnUiThread();
+                }*/
+            }
+        }
         return inputFrame.rgba();
+
+    }
+
+    private boolean isADuplicate(Mat img1, Mat img2){
+        MatOfKeyPoint keypoints1 = new MatOfKeyPoint();
+        MatOfKeyPoint keypoints2 = new MatOfKeyPoint();
+        Mat descriptors1 = new Mat();
+        Mat descriptors2 = new Mat();
+
+        //Definition of ORB keypoint detector and descriptor extractors
+        FeatureDetector detector = FeatureDetector.create(FeatureDetector.ORB);
+        DescriptorExtractor extractor = DescriptorExtractor.create(DescriptorExtractor.ORB);
+
+        //Detect keypoints
+        detector.detect(img1, keypoints1);
+        detector.detect(img2, keypoints2);
+        //Extract descriptors
+        extractor.compute(img1, keypoints1, descriptors1);
+        extractor.compute(img2, keypoints2, descriptors2);
+
+        //Definition of descriptor matcher
+        DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
+
+        //Match points of two images
+        MatOfDMatch matches = new MatOfDMatch();
+        matcher.match(descriptors1,descriptors2 ,matches);
+        return (matches.toList().size() > COUNT_OF_MACHES);
+    }
+
+    private void showToastnUiThread(final String message){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(CameraActivity.this, message, Toast.LENGTH_LONG).show();
+            }
+        });
+
+    }
+
+    private void takeAPictureOnUiThread(){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+
+                takeAPicture();
+            }
+        });
     }
 
     @Override
@@ -114,6 +242,14 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
         if (mOpenCvCameraView == null){
             return false;
         }
+
+        mCheckIntervalMenu = menu.addSubMenu("Check interval");
+        mCheckIntervalMenuItems = new MenuItem[3];
+        mCheckIntervalMenuItems[0] = mCheckIntervalMenu.add(5,0, Menu.NONE, "2 seconds");
+        mCheckIntervalMenuItems[0] = mCheckIntervalMenu.add(5,1, Menu.NONE, "5 seconds");
+        mCheckIntervalMenuItems[0] = mCheckIntervalMenu.add(5,2, Menu.NONE, "10 seconds");
+
+
         List<String> effects = mOpenCvCameraView.getEffectList();
 
         if (effects == null) {
@@ -128,7 +264,7 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
         ListIterator<String> effectItr = effects.listIterator();
         while(effectItr.hasNext()) {
            String element = effectItr.next();
-           mEffectMenuItems[idx] = mColorEffectsMenu.add(1, idx, Menu.NONE, element);
+           mEffectMenuItems[idx] = mColorEffectsMenu.add(5, idx, Menu.NONE, element);
            idx++;
         }
 
@@ -145,6 +281,15 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
             idx++;
          }
 
+        mPlayMenu = menu.add(3, 3, 0,"Play");
+        mPlayMenu.setIcon(android.R.drawable.ic_media_play);
+        mPlayMenu.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+        mStopMenu = menu.add(4, 4, 0,"Stop");
+        mStopMenu.setIcon(android.R.drawable.ic_media_pause);
+        mStopMenu.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+
+        //mPlayMenu.setGroupVisible(1, true);
+        mStopMenu.setVisible(false);
         return true;
     }
 
@@ -163,6 +308,21 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
             resolution = mOpenCvCameraView.getResolution();
             String caption = Integer.valueOf(resolution.width).toString() + "x" + Integer.valueOf(resolution.height).toString();
             Toast.makeText(this, caption, Toast.LENGTH_SHORT).show();
+        } else if (item.getItemId() == 3){
+            startRecord();
+        } else if (item.getItemId() == 4){
+            stopRecord();
+        } else if (item.getGroupId() == 5){
+            if (item.getItemId() == 0){
+                Toast.makeText(this, "2 seconds set", Toast.LENGTH_SHORT).show();
+                checkInterval = 2;
+            } else if (item.getItemId() == 1){
+                Toast.makeText(this, "5 seconds set", Toast.LENGTH_SHORT).show();
+                checkInterval = 5;
+            } else if (item.getItemId() == 2){
+                Toast.makeText(this, "10 seconds set", Toast.LENGTH_SHORT).show();
+                checkInterval = 10;
+            }
         }
 
         return true;
@@ -171,13 +331,41 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
     @SuppressLint("SimpleDateFormat")
     @Override
     public boolean onTouch(View v, MotionEvent event) {
-        Log.i(TAG,"onTouch event");
+        //takeAPicture();
+        return false;
+    }
+
+    private void takeAPicture(){
+
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
         String currentDateandTime = sdf.format(new Date());
         String fileName = Environment.getExternalStorageDirectory().getPath() +
-                               "/sample_picture_" + currentDateandTime + ".jpg";
+                "/sample_picture_" + currentDateandTime + ".jpg";
+        if (!isActive)
+            return;
         mOpenCvCameraView.takePicture(fileName);
+
         Toast.makeText(this, fileName + " saved", Toast.LENGTH_SHORT).show();
-        return false;
+    }
+
+    private void startRecord(){
+        isActive = true;
+        lastCheck = System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(checkInterval);
+        lastMat = null;
+        mPlayMenu.setVisible(!isActive);
+        mStopMenu.setVisible(isActive);
+        mCheckIntervalMenu.setGroupVisible(5, !isActive);
+        mColorEffectsMenu.setGroupVisible(1, !isActive);
+        mResolutionMenu.setGroupVisible(2, !isActive);
+
+    }
+
+    private void stopRecord(){
+        isActive = false;
+        mPlayMenu.setVisible(!isActive);
+        mStopMenu.setVisible(isActive);
+        mCheckIntervalMenu.setGroupVisible(5, !isActive);
+        mColorEffectsMenu.setGroupVisible(1, !isActive);
+        mResolutionMenu.setGroupVisible(2, !isActive);
     }
 }
