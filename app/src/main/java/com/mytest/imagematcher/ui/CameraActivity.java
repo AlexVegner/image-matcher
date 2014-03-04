@@ -23,15 +23,21 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.core.CvException;
+import org.opencv.core.Core;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDMatch;
+import org.opencv.core.MatOfFloat;
+import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfKeyPoint;
+import org.opencv.features2d.DMatch;
 import org.opencv.features2d.DescriptorExtractor;
 import org.opencv.features2d.DescriptorMatcher;
 import org.opencv.features2d.FeatureDetector;
+import org.opencv.imgproc.Imgproc;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.ListIterator;
@@ -39,6 +45,8 @@ import java.util.concurrent.TimeUnit;
 
 public class CameraActivity extends Activity implements CvCameraViewListener2, OnTouchListener {
     private static final String TAG = "OCVSample::Activity";
+
+    private static int MIN_DIST = 30;
 
     private CameraView mOpenCvCameraView;
     private List<Size> mResolutionList;
@@ -58,6 +66,9 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
     private int checkInterval = 5;
     private Mat lastMat = null;
     private int COUNT_OF_MACHES = 50;
+    private int MAX_MACHES_DELTA_PERSENTAGE = 80;
+
+    private static int descriptor = DescriptorExtractor.BRISK;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -76,6 +87,7 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
             }
         }
     };
+
 
 
     public CameraActivity() {
@@ -127,15 +139,93 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
     }
 
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
+        Mat currentMat  = inputFrame.rgba();
         if (isActive && lastCheck + TimeUnit.SECONDS.toMillis(checkInterval) <= System.currentTimeMillis() ){
             lastCheck = System.currentTimeMillis();
             if (lastMat == null){
                 lastMat = inputFrame.rgba();
-                takeAPictureOnUiThread();
+                //TODO save first picture
             } else {
-                Mat currentMat = inputFrame.rgba();
+               /* MatchRequest mr = new MatchRequest();
+                mr.setContect(this);
+                mr.setDescriptor(DescriptorExtractor.BRISK);
+                mr.setFirstMat(lastMat);
+                mr.setSecondMat(currentMat);
+                Mat m1 = lastMat.clone();
+                Mat m2 = currentMat.clone();
+                Imgproc.cvtColor(m1, m1, Imgproc.COLOR_RGBA2GRAY);
+                Imgproc.cvtColor(m2, m2, Imgproc.COLOR_RGBA2GRAY);
+                mr.setFirstGrayMat(m1);
+                mr.setSecondGrayMat(m2);*/
+
                 Mat img1 = lastMat.clone();
                 Mat img2 = currentMat.clone();
+                Imgproc.cvtColor(img1, img1, Imgproc.COLOR_RGBA2GRAY);
+                Imgproc.cvtColor(img2, img2, Imgproc.COLOR_RGBA2GRAY);
+                img1.convertTo(img1, CvType.CV_32F);
+                img2.convertTo(img2, CvType.CV_32F);
+                //Log.d("ImageComparator", "img1:"+img1.rows()+"x"+img1.cols()+" img2:"+img2.rows()+"x"+img2.cols());
+                Mat hist1 = new Mat();
+                Mat hist2 = new Mat();
+                MatOfInt histSize = new MatOfInt(180);
+                MatOfInt channels = new MatOfInt(0);
+                ArrayList<Mat> bgr_planes1= new ArrayList<Mat>();
+                ArrayList<Mat> bgr_planes2= new ArrayList<Mat>();
+                Core.split(img1, bgr_planes1);
+                Core.split(img2, bgr_planes2);
+                MatOfFloat histRanges = new MatOfFloat (0f, 180f);
+                boolean accumulate = false;
+                Imgproc.calcHist(bgr_planes1, channels, new Mat(), hist1, histSize, histRanges, accumulate);
+                Core.normalize(hist1, hist1, 0, hist1.rows(), Core.NORM_MINMAX, -1, new Mat());
+                Imgproc.calcHist(bgr_planes2, channels, new Mat(), hist2, histSize, histRanges, accumulate);
+                Core.normalize(hist2, hist2, 0, hist2.rows(), Core.NORM_MINMAX, -1, new Mat());
+                img1.convertTo(img1, CvType.CV_32F);
+                img2.convertTo(img2, CvType.CV_32F);
+                hist1.convertTo(hist1, CvType.CV_32F);
+                hist2.convertTo(hist2, CvType.CV_32F);
+
+                double compare = Imgproc.compareHist(hist1, hist2, Imgproc.CV_COMP_CHISQR);
+
+                Log.d("ImageComparator", "compare: " + compare);
+                if(compare>0 && compare<1500) {
+                    takeAPictureOnUiThread();
+                }
+                else if(compare==0) {
+                    //TODO
+                } else {
+                    takeAPictureOnUiThread();
+
+                }
+
+                //new ImageComparator().execute(mr);
+
+
+                /*Mat currentMat = inputFrame.rgba();
+                Mat img1 = lastMat.clone();
+                Mat img2 = currentMat.clone();
+
+                Mat result = new Mat();
+
+                Core.su
+                *//*try {
+
+                    Core.compare(img1, img2, result, Core.CMP_NE);
+
+                    int val = Core.countNonZero(result);
+
+                    Log.i("compare_log", "val = "+ String.valueOf(val));
+                    if(val == 0) {
+                        //Duplicate Image
+                    } else {
+                        //Different Image
+                        lastMat = currentMat;
+                        takeAPictureOnUiThread();
+                    }
+                } catch (CvException e){
+                    lastMat = currentMat;
+                    takeAPictureOnUiThread();
+                 }*//*
+
                 try {
                     if (isADuplicate(img1, img2)){
                         //showToastnUiThread("Images are exact duplicates");
@@ -144,9 +234,15 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
                         lastMat = currentMat;
                         takeAPictureOnUiThread();
                     }
+
+
+
+
+
                 } catch (CvException e){
 
-                }
+                }*/
+
 
 
                 /*
@@ -187,9 +283,13 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
                 }*/
             }
         }
+        if (lastMat != null)
+            lastMat.release();
+        lastMat = currentMat;
         return inputFrame.rgba();
 
     }
+
 
     private boolean isADuplicate(Mat img1, Mat img2){
         MatOfKeyPoint keypoints1 = new MatOfKeyPoint();
@@ -214,7 +314,91 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
         //Match points of two images
         MatOfDMatch matches = new MatOfDMatch();
         matcher.match(descriptors1,descriptors2 ,matches);
-        return (matches.toList().size() > COUNT_OF_MACHES);
+
+        List<DMatch> matchesList = matches.toList();
+
+        List<DMatch> matches_final = new ArrayList<DMatch>();
+        int minDist = 1000000;
+        int maxDist = 0;
+        for (int i = 0; i < matchesList.size(); i++) {
+            if (minDist > (int)matchesList.get(i).distance)
+                minDist = (int)matchesList.get(i).distance;
+            else if (maxDist < (int)matchesList.get(i).distance)
+                maxDist = (int)matchesList.get(i).distance;
+        }
+
+        Log.i("currentMatchesCount", String.format("minDist = %s, maxDist = %s, deltaDist = %s", minDist, maxDist, minDist*2+maxDist*0.2 ));
+
+        for (int i = 0; i < matchesList.size(); i++) {
+            if (matchesList.get(i).distance <= minDist*2+maxDist*0.2) {
+                matches_final.add(matches.toList().get(i));
+            }
+        }
+
+        int keypoints1Size = keypoints1.toList().size();
+        int keypoints2Size = keypoints2.toList().size();
+        if (keypoints2Size == 0)
+            return true;
+        int countOfKeyPoint = keypoints1Size > keypoints2Size ? keypoints1Size : keypoints2Size;
+        int currentMatchesCount =  matches_final.size();
+        Log.i("currentMatchesCount", String.format("currentMatchesCount = %s, countOfKeyPoint = %s", currentMatchesCount, countOfKeyPoint));
+        return countOfKeyPoint / 100 * MAX_MACHES_DELTA_PERSENTAGE <= currentMatchesCount;
+    }
+
+    private boolean isADuplicate2(Mat img1, Mat img2) {
+        try {
+
+            Imgproc.cvtColor(img1, img1, Imgproc.COLOR_BGR2RGB);
+            Imgproc.cvtColor(img2, img2, Imgproc.COLOR_BGR2RGB);
+            FeatureDetector detector = FeatureDetector.create(FeatureDetector.PYRAMID_FAST);
+            DescriptorExtractor descExtractor = DescriptorExtractor.create(descriptor);
+            DescriptorMatcher matcher = DescriptorMatcher
+                    .create(DescriptorMatcher.BRUTEFORCE_HAMMING);
+
+            MatOfKeyPoint keypoints = new MatOfKeyPoint();
+            MatOfKeyPoint dupKeypoints = new MatOfKeyPoint();
+            Mat descriptors = new Mat();
+            Mat dupDescriptors = new Mat();
+            MatOfDMatch matches = new MatOfDMatch();
+            detector.detect(img1, keypoints);
+            Log.d("LOG!", "number of query Keypoints= " + keypoints.size());
+            detector.detect(img2, dupKeypoints);
+            Log.d("LOG!", "number of dup Keypoints= " + dupKeypoints.size());
+            // Descript keypoints
+            //DescriptorExtractor descExtractor = DescriptorExtractor.create(descriptor);
+            descExtractor.compute(img1, keypoints, descriptors);
+            descExtractor.compute(img2, dupKeypoints, dupDescriptors);
+            Log.d("LOG!", "number of descriptors= " + descriptors.size());
+            Log.d("LOG!",
+                    "number of dupDescriptors= " + dupDescriptors.size());
+            // matching descriptors
+            matcher.match(descriptors, dupDescriptors, matches);
+            Log.d("LOG!", "Matches Size " + matches.size());
+            // New method of finding best matches
+            List<DMatch> matchesList = matches.toList();
+
+            /*List<DMatch> matches_final = new ArrayList<DMatch>();
+            for (int i = 0; i < matchesList.size(); i++) {
+                if (matchesList.get(i).distance <= MIN_DIST) {
+                    matches_final.add(matches.toList().get(i));
+                }
+            }
+
+            MatOfDMatch matches_final_mat = new MatOfDMatch();
+            matches_final_mat.fromList(matches_final);*/
+
+            int keypoints1Size = keypoints.toList().size();
+            int keypoints2Size = dupKeypoints.toList().size();
+            int countOfKeyPoint = keypoints1Size > keypoints2Size ? keypoints1Size : keypoints2Size;
+            int currentMatchesCount =  matchesList.size();
+            Log.i("currentMatchesCount", String.format("currentMatchesCount = %s, countOfKeyPoint = %s", currentMatchesCount, countOfKeyPoint));
+            return countOfKeyPoint / 100 * MAX_MACHES_DELTA_PERSENTAGE <= currentMatchesCount;
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return true;
+        }
     }
 
     private void showToastnUiThread(final String message){
@@ -335,12 +519,12 @@ public class CameraActivity extends Activity implements CvCameraViewListener2, O
         return false;
     }
 
-    private void takeAPicture(){
+    private void  takeAPicture(){
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
         String currentDateandTime = sdf.format(new Date());
         String fileName = Environment.getExternalStorageDirectory().getPath() +
-                "/sample_picture_" + currentDateandTime + ".jpg";
+                "/sample_picture_" + currentDateandTime;
         if (!isActive)
             return;
         mOpenCvCameraView.takePicture(fileName);
