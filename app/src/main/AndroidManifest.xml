@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.mytest.imagematcher" >
+    package="com.mytest.imagematcher"
+    android:versionCode="1"
+    android:versionName="0.2">
+
 
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-sdk android:minSdkVersion="11" />

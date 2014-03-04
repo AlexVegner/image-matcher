@@ -99,9 +99,6 @@ public class Camera2Activity extends Activity implements CvCameraViewListener2 {
         // This has to be called before setContentView
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 
-// This shows an indeterminate progress bar in the action bar
-
-
         setContentView(R.layout.tutorial3_surface_view);
 
         mOpenCvCameraView = (CameraView) findViewById(R.id.tutorial3_activity_java_surface_view);
@@ -267,10 +264,9 @@ public class Camera2Activity extends Activity implements CvCameraViewListener2 {
         mStopMenu.setIcon(android.R.drawable.ic_media_pause);
         mStopMenu.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
 
-        //mPlayMenu.setGroupVisible(1, true);
         mStopMenu.setVisible(false);
 
-        mMachCongig = menu.add(6, 6, 0,"Mach config");
+        mMachCongig = menu.add(6, 6, 0,"Match config");
         return true;
     }
 

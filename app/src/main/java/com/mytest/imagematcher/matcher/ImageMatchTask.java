@@ -61,10 +61,6 @@ public class ImageMatchTask {
         try {
             Mat img1 = this.img1.clone();
             Mat img2 = this.img2.clone();
-            /*Imgproc.cvtColor(img1, img1, Imgproc.COLOR_2RGB);
-            Imgproc.cvtColor(img2, img2, Imgproc.COLOR_BGR2RGB);*/
-           /* Imgproc.cvtColor(img1, img1, Imgproc.COLOR_RGB2GRAY);
-            Imgproc.cvtColor(img2, img2, Imgproc.COLOR_RGB2GRAY);*/
             detector = FeatureDetector.create(FeatureDetector.PYRAMID_FAST);
             DescExtractor = DescriptorExtractor.create(descriptor);
             matcher = DescriptorMatcher
@@ -101,9 +97,7 @@ public class ImageMatchTask {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        //List<DMatch> finalMatchesList = matches_final_mat.toList();
         int goodMatches = matches_final_mat.toList().size();
-
         Log.i(TAG, String.format("in:  %S, out: %s, result %s",keypoints.toList().size(), dupKeypoints.toList().size(),  goodMatches ));
 
         isDuplicate = (goodMatches > minMatches);
@@ -111,7 +105,6 @@ public class ImageMatchTask {
             asyncTaskContext.showToastnUiThread( String.format("Images are similar. \n Count of good matches: %d", goodMatches));
         } else {
             asyncTaskContext.takeAPictureOnUiThread(goodMatches);
-            //asyncTaskContext.showToastnUiThread("Images are similar");
         }
      }
 
