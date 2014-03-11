@@ -27,7 +27,6 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfFloat;
 import org.opencv.core.MatOfInt;
-import org.opencv.features2d.DescriptorExtractor;
 import org.opencv.imgproc.Imgproc;
 
 import java.text.SimpleDateFormat;
@@ -40,14 +39,10 @@ import java.util.concurrent.TimeUnit;
 public class Camera2Activity extends Activity implements CvCameraViewListener2 {
     private static final String TAG = "OCVSample::Activity";
 
-    private static int MIN_DIST = 30;
-
     private int checkInterval = 5;
 
 
     private CameraView mOpenCvCameraView;
-
-    private static long startTime, endTime;
 
     // Menu
     private List<Camera.Size> mResolutionList;
@@ -68,9 +63,6 @@ public class Camera2Activity extends Activity implements CvCameraViewListener2 {
 
     private MenuItem mMachCongig;
 
-
-
-    private static int descriptor = DescriptorExtractor.BRISK;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override

@@ -77,11 +77,7 @@ public class SettingsActivity extends Activity {
                     min_dist = 80;
                     min_matches=100;
                 }
-                Intent call = new Intent(SettingsActivity.this, com.mytest.imagematcher.comparator.MainActivity.class);
-                call.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-                call.putExtra("descriptor", descriptor);
-                call.putExtra("min_dist", min_dist);
-                call.putExtra("min_matches", min_matches);
+                ProjectPreferences.getInstance().applyMachSettings(descriptor, min_dist, min_matches);
                 finish();
             }
         });
