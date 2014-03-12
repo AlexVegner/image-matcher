@@ -98,9 +98,9 @@ public class SettingsActivity extends Activity {
 					descriptor = DescriptorExtractor.ORB;
 				try {
 					min_dist = Integer.parseInt(DIST_LIMIT.getText().toString());
+                    min_matches = Integer.parseInt(MIN_MATCHES.getText().toString());
 				} catch (Exception e) {
 					e.printStackTrace();
-					min_dist = 500;
 				}
 
                 ProjectPreferences pref = ProjectPreferences.getInstance();
